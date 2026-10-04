@@ -88,7 +88,7 @@ await ovClick('[data-ov="try"]');
 await grid();
 await page.keyboard.press('Control+ArrowDown');
 await ov('.speedup');
-await shot('aha-speedup');
+await page.waitForTimeout(300); await shot('aha-speedup');
 ok(true, 'SPEED UP 体験（' + Math.round((Date.now() - t0) / 1000) + '秒）');
 await ovClick('[data-ov="next"]');
 for (const key of ['select', 'find', 'replace', 'sum', 'filter']) {
@@ -171,7 +171,7 @@ for (const key of ['move', 'select', 'find', 'replace', 'sum', 'filter']) {
 }
 await page.click('.btn-report');
 await page.waitForSelector('.ba');
-await shot('before-after');
+await page.waitForTimeout(300); await shot('before-after'); SHOTS && await page.screenshot({ path: SHOTS + '/ba-full.png', fullPage: true });
 const baText = await page.textContent('.ba');
 ok(baText.includes('BEFORE') && baText.includes('同等条件'), 'BEFORE / AFTER（同等条件の明示）');
 await page.click('[data-go="card"]');

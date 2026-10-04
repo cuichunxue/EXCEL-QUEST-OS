@@ -95,13 +95,23 @@ img { max-width: 100%; }
 /* navigator */
 .nv { display: flex; gap: 10px; align-items: flex-start; margin: 10px 0; }
 .nv-face { width: 52px; height: 70px; object-fit: cover; border-radius: 10px; border: 2px solid var(--yellow); flex: none; background: var(--navy-2); }
-.nv-bot { width: 52px; height: 80px; object-fit: contain; border-color: var(--blue-2); }
+.nv-bot { width: 64px; height: 64px; object-fit: cover; border-color: var(--blue-2); }
+.nv-w-male .nv-face { width: 56px; height: 56px; border-color: var(--blue-2); }
+.nv-face.nv-pose { width: 72px; height: auto; max-height: 120px; object-fit: contain; border-color: var(--blue-2); }
+.nv-w-boss .nv-face { border-color: var(--red); }
+.aha-pose { display: flex; align-items: flex-end; gap: 10px; text-align: left; margin: 8px 0; }
+.aha-img { width: 96px; flex: none; border-radius: 10px; }
+.aha-pose .nv-bubble::before { top: auto; bottom: 18px; }
+.ending { position: relative; max-width: 640px; margin: 24px auto 0; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid rgba(242,183,5,.35); }
+.ending img { display: block; width: 100%; height: auto; }
+.ending figcaption { position: absolute; left: 0; right: 0; top: 0; padding: 14px 18px 40px; background: linear-gradient(180deg, rgba(18,28,40,.85), transparent); font-size: clamp(16px, 2.6vw, 22px); font-weight: 900; text-shadow: 0 2px 6px rgba(0,0,0,.6); }
+.ending figcaption span { font-size: .75em; font-weight: 700; color: var(--yellow-2); }
 .nv-bubble { position: relative; background: #fff; color: var(--paper-ink); border-radius: 12px; padding: 10px 14px; font-size: 14px; line-height: 1.6; box-shadow: 0 2px 0 rgba(0,0,0,.15); }
 .nv-bubble::before { content: ''; position: absolute; left: -7px; top: 18px; border: 7px solid transparent; border-left: 0; border-right-color: #fff; }
 .nv-bubble b { color: #8a5a00; }
 
 /* ---------------------------------------------------------------- home */
-.home .hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: 28px; align-items: center; margin-top: 8px; }
+.home .hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 28px; align-items: center; margin-top: 8px; }
 .hero-art { border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid rgba(242,183,5,.35); }
 .hero-img { display: block; width: 100%; height: auto; }
 .hero-kicker { color: var(--yellow-2); font-weight: 700; margin: 0 0 6px; letter-spacing: .04em; }
@@ -432,7 +442,8 @@ img { max-width: 100%; }
 .wk-cand { display: flex; align-items: center; gap: 14px; background: #fff; color: var(--paper-ink); padding: 14px; border-radius: var(--radius); flex-wrap: wrap; }
 .wk-cand b { font-size: 18px; }
 .wk-cand small { color: #6b7b8c; }
-.rs-head { text-align: center; margin-bottom: 16px; }
+.rs-head { display: flex; justify-content: center; align-items: center; gap: 14px; text-align: center; margin-bottom: 16px; }
+.rs-bot { width: 86px; border-radius: 12px; }
 .rs-tag { display: inline-block; background: var(--yellow); color: #1a1300; font-weight: 900; padding: 2px 12px; border-radius: 6px; letter-spacing: .06em; border: 2px solid #1a1300; }
 .rs-head h1 { color: var(--ink); font-size: clamp(22px, 4vw, 30px); margin: 10px 0 0; }
 .rs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
@@ -441,8 +452,10 @@ img { max-width: 100%; }
 .rs-ico { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: #e8f0f8; color: var(--blue); font-size: 20px; flex: none; }
 .rescue-card { max-width: 640px; }
 .back { margin-bottom: 10px; }
-.rc { background: var(--navy-2); border: 1px solid rgba(242,183,5,.35); border-radius: 16px; padding: 18px 20px; }
+.rc { position: relative; background: var(--navy-2); border: 1px solid rgba(242,183,5,.35); border-radius: 16px; padding: 18px 20px; }
 .rc-sec { margin-top: 14px; }
+.rc-navi { position: absolute; right: 16px; top: 16px; width: 92px; border-radius: 12px; border: 2px solid rgba(242,183,5,.5); }
+@media (max-width: 760px) { .rc-navi { width: 64px; } .rs-bot { width: 60px; } }
 .rc-sec h1 { margin: 2px 0; font-size: 22px; }
 .rc-sec p { margin: 2px 0; color: var(--ink-dim); }
 .rc .dm-cap { color: var(--ink); }

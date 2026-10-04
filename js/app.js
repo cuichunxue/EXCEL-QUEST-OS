@@ -28,9 +28,14 @@
   const dur = (ms) => (ms < 60000 ? sec(ms) : clock(ms));
   const diff = (b, a) => (Math.abs(b - a) < 50 ? '±0' : (a < b ? '−' : '+') + dur(Math.abs(b - a)));
   const img = (name, alt, cls) => `<img src="assets/img/${name}" alt="${esc(alt || '')}" class="${cls || ''}" ${alt ? '' : 'aria-hidden="true"'}>`;
+  // who: navi（メイン）/ male（サポート）/ boss（上司）/ bot（エクセルボット）
   function navi(expr, html, who) {
-    const face = who === 'bot' ? img('bot.png', 'エクセルボット', 'nv-face nv-bot') : img(`navi-${expr || 'normal'}.png`, 'ナビゲーター', 'nv-face');
-    return `<div class="nv${who === 'bot' ? ' nv-is-bot' : ''}">${face}<div class="nv-bubble">${html}</div></div>`;
+    let face;
+    if (who === 'bot') face = img(expr === 'trap' ? 'bot-trap.png' : 'bot.png', 'エクセルボット', 'nv-face nv-bot');
+    else if (who === 'boss') face = img('boss.png', '上司', 'nv-face nv-pose');
+    else if (who === 'male') face = img(`male-${expr || 'normal'}.png`, 'サポートキャラクター', 'nv-face' + (expr === 'point' ? ' nv-pose' : ''));
+    else face = img(`navi-${expr || 'normal'}.png`, 'ナビゲーター', 'nv-face');
+    return `<div class="nv nv-w-${who || 'navi'}">${face}<div class="nv-bubble">${html}</div></div>`;
   }
   function overlay(html, actions, cls) {
     const el = document.createElement('div');
@@ -216,7 +221,7 @@
     return `
       <div class="trap">
         <div class="trap-tag">${img('icon-discovery.png', '', 'ico')} DISCOVERY｜REAL EXCEL TRAP</div>
-        ${navi('', `<b>😳 ${esc(t.title)}</b><br>${esc(t.cause)}`, 'bot')}
+        ${navi('trap', `<b>😳 ${esc(t.title)}</b><br>${esc(t.cause)}`, 'bot')}
         <p>${esc(t.body)}</p>
         <p class="trap-tip">💡 ${esc(t.tip)}</p>
         <p class="note">Shortcut ≠ 万能。これは失敗ではなく、Excel の仕組みの発見です（減点なし・タイマー停止中）。</p>
@@ -295,7 +300,7 @@
       <div class="page home">
         ${prompts.join('')}
         <section class="hero">
-          <div class="hero-art">${img('hero.jpg', 'EXCEL QUEST OS メインビジュアル：製造現場のナビゲーターとエクセルボット', 'hero-img')}</div>
+          <div class="hero-art">${img('hero.jpg', 'EXCEL QUEST OS メインビジュアル：ナビゲーター、サポートキャラクター、エクセルボット', 'hero-img')}</div>
           <div class="hero-copy">
             <p class="hero-kicker">仕事を解決していたら、Excelが速くなっていた。</p>
             <h1>あなたのExcel、<br><span class="hl">何秒</span>速くできる？</h1>
@@ -445,7 +450,7 @@
         `<div class="aha">
           <div class="aha-tag">⚡ SPEED UP</div>
           <div class="speedup"><div><span class="lbl">いつもの方法（実測）</span><b>${before.done || before.timedOut ? sec(before.ms) + (before.done ? '' : '+') : '—'}</b></div><div class="arr">→</div><div class="after"><span class="lbl">今回（実測）</span><b>${sec(r.ms)}</b></div></div>
-          ${navi('smile', '「キーを覚えた」より、<b>「大量データの移動が速くなった」</b>。<br>残り5問は、またいつものやり方でOK。')}
+          <div class="aha-pose">${img('navi-start.png', '', 'aha-img')}<div class="nv-bubble">「キーを覚えた」より、<b>「大量データの移動が速くなった」</b>。<br>残り5問は、またいつものやり方でOK。</div></div>
           <div class="ov-btns"><button class="btn primary" data-ov="next">残り5問 ▶</button></div>
         </div>`,
         { next }
@@ -505,7 +510,7 @@
         </div>
         <div class="bn-ops">マウス操作 <b>${tot('mouse')}</b> 回 ／ キーボード操作 <b>${tot('kb')}</b> 回 ／ ショートカット <b>${tot('scCount')}</b> 回 <small>（実測）</small></div>
         <div class="today3">
-          ${navi('smile', '<b>今日は3つだけ。</b>あなたの仕事でいちばん時間を取っているところから。')}
+          ${navi('point', '<b>今日は3つだけ。</b>あなたの仕事でいちばん時間を取っているところから練習しましょう。', 'male')}
           <div class="picks">${picks.map((p, k) => `<div class="pick"><span class="pick-n">${k + 1}</span><b>${esc(SKILLS[p].name)}</b><small>${SKILLS[p].cat}</small></div>`).join('')}</div>
         </div>
         <div class="layers">
@@ -705,7 +710,7 @@
         <div class="fi-bg">${img('bg-control.jpg', '')}</div>
         <div class="fi-card">
           <div class="fi-clock">🚨 15:55</div>
-          ${navi('surprise', '上司「<b>16時の会議までに、この生産実績をまとめて！</b>」')}
+          ${navi('', '「<b>16時の会議までに、この生産実績をまとめて！</b>」', 'boss')}
           <ul class="fi-list"><li>5,000行の生産実績</li><li>やることは画面右に1つずつ出ます</li><li>どの操作を使うかは、あなたの判断</li><li>16:00を過ぎても最後までやってOK</li></ul>
           <div class="fi-timer">05:00</div>
           <button type="button" class="btn btn-start primary">START ▶</button>
@@ -747,7 +752,7 @@
       tracker = new Tracker(s.skill);
       L.job.textContent = s.job;
       L.detail.textContent = `工程 ${k + 1} / ${fm.steps.length}`;
-      L.bubble.innerHTML = navi(k === 0 ? 'normal' : 'smile', k === 0 ? 'ショートカット名は出しません。<b>どの操作を使うかも、腕の見せどころ。</b>' : 'いいペース。次へ。');
+      L.bubble.innerHTML = navi(k === 0 ? 'serious' : 'smile', k === 0 ? 'ショートカット名は出しません。<b>どの操作を使うかも、腕の見せどころ。</b>' : 'いいペース。次へ。', 'male');
       hc.reset();
       list();
       sim.focus();
@@ -865,6 +870,7 @@
             : `<p class="note warn">${chk ? 'BEFORE と AFTER で両方完了した工程がないため、' : 'SPEED CHECK（BEFORE）が未実施のため、'}比較しません（条件が異なる結果で「速くなった」とは言えないため）。</p>`
         }
         <table class="ba-table"><thead><tr><th>工程</th><th>BEFORE</th><th>AFTER</th><th>差</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+        <figure class="ending">${img('ending.jpg', '夕日の工場を見つめる3人')}<figcaption>${can && aMs < bMs - 50 ? '昨日より、Excel仕事が速くなった。<br><span>そして、困ったらまたここを使いたい。</span>' : '明日、今日の3技を1つ使ってみよう。<br><span>困ったら、またここへ。</span>'}</figcaption></figure>
         <div class="ov-btns"><button type="button" class="btn primary" data-go="card">📌 SPEED CARD を作る ▶</button></div>
       </div>`;
     const b = app.querySelector('[data-go]');
@@ -1037,7 +1043,7 @@
   SCREENS.rescue = function () {
     app.innerHTML = `
       <div class="page rescue">
-        <div class="rs-head"><span class="rs-tag">30 SECOND RESCUE</span><h1>今、Excelで何に困ってる？</h1></div>
+        <div class="rs-head">${img('bot-rescue.png', '', 'rs-bot')}<div><span class="rs-tag">30 SECOND RESCUE</span><h1>今、Excelで何に困ってる？</h1></div></div>
         <div class="rs-grid">${EQ.RESCUE.map((r) => `<button type="button" class="rs-item" data-id="${r.id}"><span class="rs-ico">${RESCUE_ICON[r.id]}</span>${esc(r.need)}</button>`).join('')}</div>
         <p class="note">実務中にそのまま使えます。JOB → KEY → 10秒デモ → 注意点 → Excelで試す。</p>
       </div>`;
@@ -1050,6 +1056,7 @@
       <div class="page rescue-card">
         <button type="button" class="btn btn-ghost back" data-act="back">← 困りごと一覧</button>
         <article class="rc">
+          ${img('navi-hint.png', '', 'rc-navi')}
           <span class="rs-tag">30 SECOND RESCUE</span>
           <div class="rc-sec"><span class="lbl">JOB</span><h1>${esc(r.need)}</h1><p>${esc(r.job)}</p></div>
           <div class="rc-sec"><span class="lbl">KEY</span>${skKeys(r.skill, true)}</div>
