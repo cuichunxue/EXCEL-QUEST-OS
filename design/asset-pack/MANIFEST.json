@@ -1,0 +1,24 @@
+{
+  "images": [
+    "hero-main.png",
+    "characters.png",
+    "badges-icons.png",
+    "background-scenes.png",
+    "ui-components.png",
+    "screen-examples.png",
+    "demo-frames.png",
+    "rescue-ui.png",
+    "audio-guide.png",
+    "excel-quest-asset-master.png"
+  ],
+  "sfx": [
+    "ui-click.wav",
+    "correct.wav",
+    "speed-up.wav",
+    "discovery.wav",
+    "hint.wav",
+    "warning.wav",
+    "clear.wav"
+  ],
+  "voice_refs": 3
+}

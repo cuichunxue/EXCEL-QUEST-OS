@@ -1,0 +1,9 @@
+# AI Voice assets
+Generated with AI Voice Generator. Full voiceovers remain available at the provider links below.
+
+- mission-start: https://www.aidocmaker.com/g0/audio?name=7facd68b6ca7471e98842724eaaf7931
+  Transcript: ミッション開始。いつものやり方で大丈夫です。まずは、5,000行のデータから最後の入力行を確認してください。
+- speed-up: https://www.aidocmaker.com/g0/audio?name=3ea28fe6e23343e593fe724ba433e1e6
+  Transcript: スピードアップ！もっと速い方法を発見しました。もう一度、自分の操作で試してみましょう。
+- discovery: https://www.aidocmaker.com/g0/audio?name=b0ce662911534543ae8f71c2fdee5e93
+  Transcript: ディスカバリー。ショートカットは万能ではありません。データの途中に空白があると、移動が途中で止まることがあります。

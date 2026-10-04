@@ -1,0 +1,12 @@
+{
+  "name": "excel-quest-os",
+  "version": "1.0.0",
+  "private": true,
+  "description": "実務Excelスピード学習システム（静的サイト・ビルド不要）",
+  "scripts": {
+    "start": "npx http-server -p 8123 -c-1 .",
+    "test": "node --test tests/sheet.test.js",
+    "e2e": "node tests/e2e.mjs"
+  },
+  "license": "Apache-2.0"
+}
