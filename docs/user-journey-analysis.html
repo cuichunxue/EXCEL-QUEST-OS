@@ -1,0 +1,351 @@
+<title>受講者ジャーニー分析｜EXCEL QUEST OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@700;900&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: 調査報告書。左寄せの読み物＋横スクロールの Journey 表と感情曲線。製造現場の「安全黄」は注目点だけに使う */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --ink: #17212e;
+  --ink-2: #4a5768;
+  --line: #d9dee6;
+  --navy: #1b2838;
+  --accent: #2f6fa8;
+  --hi: #f2b705;
+  --hi-ink: #6b4f00;
+  --hi-bg: #fff4cc;
+  --bad: #c2412d;
+  --bad-bg: #fde9e5;
+  --ok: #1f7a4a;
+  --ok-bg: #e2f3e9;
+  --s-mouse: #2f6fa8;
+  --s-key: #6b7a8c;
+  --s-novice: #d0731a;
+  --f-display: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  --f-body: 'BIZ UDPGothic', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, 'Consolas', monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111923; --surface: #182331; --ink: #e8edf3; --ink-2: #a7b3c2; --line: #2c3a4c; --navy: #0c131c;
+    --accent: #6fa8dc; --hi: #f2b705; --hi-ink: #ffd765; --hi-bg: #3a3013; --bad: #ff8a73; --bad-bg: #3d1f1a;
+    --ok: #6fd39b; --ok-bg: #173226; --s-mouse: #6fa8dc; --s-key: #9aa8b8; --s-novice: #ffa552; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111923; --surface: #182331; --ink: #e8edf3; --ink-2: #a7b3c2; --line: #2c3a4c; --navy: #0c131c;
+  --accent: #6fa8dc; --hi: #f2b705; --hi-ink: #ffd765; --hi-bg: #3a3013; --bad: #ff8a73; --bad-bg: #3d1f1a;
+  --ok: #6fd39b; --ok-bg: #173226; --s-mouse: #6fa8dc; --s-key: #9aa8b8; --s-novice: #ffa552; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.75 var(--f-body); padding-inline: 16px; padding-block: 0 64px; }
+.wrap { max-width: 1040px; margin: 0 auto; }
+header.top { background: var(--navy); color: #e8edf3; margin-inline: -16px; padding: 36px 16px 28px; border-bottom: 4px solid var(--hi); }
+header.top .wrap { display: grid; gap: 8px; }
+.kicker { font: 600 12px/1 var(--f-mono); letter-spacing: .14em; color: var(--hi); text-transform: uppercase; }
+h1 { font: 900 clamp(26px, 4.4vw, 40px)/1.25 var(--f-display); margin: 0; text-wrap: balance; }
+.lede { color: #b9c5d3; max-width: 62ch; margin: 0; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: #94a3b5; }
+h2 { font: 900 clamp(20px, 3vw, 26px)/1.35 var(--f-display); margin: 56px 0 6px; text-wrap: balance; }
+h2 .n { font: 600 13px var(--f-mono); color: var(--accent); margin-right: 10px; letter-spacing: .08em; vertical-align: 3px; }
+h3 { font: 700 17px/1.4 var(--f-display); margin: 0 0 6px; }
+p { max-width: 70ch; }
+.sub { color: var(--ink-2); margin-top: 0; }
+.small { font-size: 13px; color: var(--ink-2); }
+code, .mono { font-family: var(--f-mono); font-size: .92em; }
+.tag { display: inline-block; font: 600 11px/1 var(--f-mono); letter-spacing: .06em; padding: 4px 7px; border-radius: 4px; background: var(--hi-bg); color: var(--hi-ink); vertical-align: 2px; }
+
+/* summary */
+.verdict { display: grid; gap: 12px; margin-top: 24px; }
+.verdict li { list-style: none; display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+.verdict { padding: 0; }
+.verdict .k { font: 900 22px/1 var(--f-display); color: var(--accent); padding-top: 3px; }
+.verdict b { display: block; font-family: var(--f-display); font-size: 16px; }
+.verdict span { color: var(--ink-2); font-size: 14px; }
+
+/* personas */
+.personas { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-top: 18px; }
+.p { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 6px; align-content: start; }
+.p .sw { width: 28px; height: 4px; border-radius: 2px; }
+.p .role { font-size: 12px; color: var(--ink-2); }
+.p q { font-size: 14px; quotes: '「' '」'; }
+.p ul { margin: 4px 0 0; padding-left: 1.1em; font-size: 13px; color: var(--ink-2); }
+
+/* chart */
+.chart-box { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 12px 8px; margin-top: 18px; overflow-x: auto; }
+.chart-box svg { display: block; min-width: 900px; width: 100%; height: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; padding: 0 6px 8px; }
+.legend i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: 4px; margin-right: 6px; }
+.ax { fill: var(--ink-2); font: 500 11px var(--f-mono); }
+.st { fill: var(--ink); font: 700 11.5px var(--f-body); }
+.zone-out { fill: var(--hi-bg); opacity: .55; }
+.grid { stroke: var(--line); stroke-width: 1; }
+.zero { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 4 4; }
+
+/* journey table */
+.jm { overflow-x: auto; margin-top: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.jm table { border-collapse: separate; border-spacing: 0; min-width: 2400px; font-size: 13px; line-height: 1.6; }
+.jm th, .jm td { vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); width: 150px; }
+.jm thead th { position: sticky; top: 0; background: var(--navy); color: #e8edf3; font: 700 13px/1.4 var(--f-display); text-align: left; }
+.jm thead th small { display: block; font: 500 10.5px var(--f-mono); color: var(--hi); letter-spacing: .06em; }
+.jm thead th.out { background: #3a4a5e; }
+.jm tbody th { position: sticky; left: 0; background: var(--surface); text-align: left; font: 700 12px var(--f-display); color: var(--ink-2); width: 92px; z-index: 1; }
+.jm td.out { background: var(--hi-bg); }
+.jm .pain { color: var(--bad); }
+.jm .opp { color: var(--ok); }
+.jm .face { font-size: 18px; }
+.jm q { quotes: '「' '」'; }
+
+/* moments of truth */
+.mot { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-top: 18px; }
+.mot article { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 6px; }
+.mot .when { font: 600 11px var(--f-mono); color: var(--accent); letter-spacing: .08em; }
+.mot .st-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill { font-size: 11.5px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); }
+.pill.good { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+.pill.risk { background: var(--bad-bg); color: var(--bad); border-color: transparent; }
+.pill.mid { background: var(--hi-bg); color: var(--hi-ink); border-color: transparent; }
+
+/* tables */
+.tbl { overflow-x: auto; margin-top: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.tbl table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 760px; }
+.tbl th, .tbl td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.tbl thead th { font: 700 12px var(--f-display); color: var(--ink-2); background: var(--bg); }
+.tbl td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.tbl tr.flag td { background: var(--bad-bg); }
+.sev { display: inline-block; min-width: 2.4em; text-align: center; font: 700 11px/1.8 var(--f-mono); border-radius: 4px; }
+.sev.h { background: var(--bad); color: #fff; }
+.sev.m { background: var(--hi); color: #1a1300; }
+.sev.l { background: var(--line); color: var(--ink); }
+.bar { display: inline-block; height: 8px; background: var(--accent); border-radius: 2px; vertical-align: 1px; margin-right: 6px; }
+.bar.warn { background: var(--bad); }
+
+.callout { margin-top: 16px; border-left: 4px solid var(--hi); background: var(--surface); padding: 12px 16px; border-radius: 0 8px 8px 0; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-top: 16px; }
+.two > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+.two ul, .two ol { margin: 6px 0 0; padding-left: 1.2em; }
+.two li { margin-bottom: 4px; }
+footer { margin-top: 56px; font-size: 12.5px; color: var(--ink-2); border-top: 1px solid var(--line); padding-top: 16px; }
+:focus-visible { outline: 3px solid var(--hi); outline-offset: 2px; }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <span class="kicker">User Journey Analysis · v2.0 MVP</span>
+    <h1>受講者ジャーニー分析</h1>
+    <p class="lede">製造・品質・技術・事務の初級〜中級者が、研修の案内を受けてから1週間後まで、何をして、何を思い、どこで離れかけるか。アプリの外も含めて15の場面に分けて分析しました。</p>
+    <div class="meta"><span>対象：EXCEL QUEST OS（ブランチ claude/excel-quest-os-mvp）</span><span>2026-10-04</span><span>根拠：実操作シミュレーション3人分＋全18画面の計測</span></div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<h2><span class="n">00</span>結論</h2>
+<p class="sub">アプリの中の流れは、要件の Journey どおりに一周できます（前回の検証で17件を修正済み）。今回の分析では、残っている大きなリスクの多くが<b>アプリの外</b>と<b>画面の言葉</b>にあることが分かりました。</p>
+<ol class="verdict">
+  <li><span class="k">1</span><div><b>いちばん大事な瞬間はアプリの外にある</b><span>翌日、本物の Excel で初めて使うときです。ここでつまずくと「研修だけの技」になります。たとえば完全一致のチェックは、本物の Excel では「オプション(T) >>」の中に隠れていますが、シミュレーターでは最初から見えています。</span></div></li>
+  <li><span class="k">2</span><div><b>英語ラベルが、対象者との距離を作っている</b><span>ミッション一覧に8個、結果画面に7個、診断結果に7個の英語ラベルがあります（BOTTLENECK、CHALLENGE、CALCULATE など）。「自分向けではない」「ゲームっぽい」と感じさせる入口になりえます。</span></div></li>
+  <li><span class="k">3</span><div><b>いちばん疲れている終盤に、いちばん文字が多い</b><span>BEFORE/AFTER は407字、診断結果は355字で、全画面の中で1位と2位です。記憶に残る「最後の印象」がいちばん重い画面になっています。</span></div></li>
+  <li><span class="k">4</span><div><b>スマホでは主ボタンが1画面目に入らない</b><span>iPhone SE ではボタンの上端が644px（画面の高さは568px）、iPhone 13 でも下端が680px（画面664px）です。困ったときに開く 30秒RESCUE も、SE では7項目のうち3つしか見えません。</span></div></li>
+  <li><span class="k">5</span><div><b>入口と再訪を本人の記憶に頼っている</b><span>「また研修？」という気持ちは案内を受けた時点で生まれますが、案内文はプロダクトの範囲外です。困った瞬間に戻ってくる道も、URL を覚えていることが前提です。研修担当者が効果をまとめて見る手段もありません。</span></div></li>
+</ol>
+
+<h2><span class="n">01</span>人物像</h2>
+<p class="sub">要件 §3 の人物像に、前回の操作シミュレーションで観察した3つの型を重ねました。4人目の研修担当者は、受講者の Journey を外から支える立場として入れています。</p>
+<div class="personas">
+  <div class="p"><span class="sw" style="background:var(--s-mouse)"></span><h3>品質保証・中級</h3><span class="role">マウス派｜検査記録を毎日 Excel で扱う</span><q>マウスでもできるし、困ってはいない</q><ul><li>スクロールとドラッグは速い</li><li>キーを知れば最も伸びる層</li><li>シミュレーション：診断22秒、FAST 37秒</li></ul></div>
+  <div class="p"><span class="sw" style="background:var(--s-key)"></span><h3>生産管理・上級寄り</h3><span class="role">キーボード派｜ショートカットは一通り使える</span><q>知ってることばかりだったら時間のムダ</q><ul><li>新しく学べるのは落とし穴の知識</li><li>前回の修正で、全部🟢なら CHALLENGE を推奨</li><li>シミュレーション：FINAL で BEFORE より遅い結果も出た</li></ul></div>
+  <div class="p"><span class="sw" style="background:var(--s-novice)"></span><h3>総務・事務・初級</h3><span class="role">初心者｜Excel は入力中心</span><q>間違えるのが怖い。ついていけるかな</q><ul><li>診断で手が止まる → 前回の修正で33秒で抜けられるように</li><li>答えを見てから自分でやる流れ</li><li>翌日、ひとりで本物の Excel を使う場面が最難関</li></ul></div>
+  <div class="p"><span class="sw" style="background:var(--hi)"></span><h3>研修担当者</h3><span class="role">受講者の外側｜案内・効果測定</span><q>受けさせた効果を、上に数字で説明したい</q><ul><li>案内文と URL の配布を担う</li><li>記録は各受講者のブラウザの中にしかない</li><li>KPI はひとりずつ JSON を書き出して集める必要がある</li></ul></div>
+</div>
+
+<h2><span class="n">02</span>感情曲線</h2>
+<p class="sub">−2（離れたい）〜＋2（使いたい）。黄色の帯はアプリの外の場面です。値は操作シミュレーションと画面の計測から推定した<b>仮説</b>で、実際の受講者で確かめる必要があります（§07）。</p>
+<div class="chart-box">
+  <div class="legend"><span><i style="background:var(--s-mouse)"></i>品質保証・中級（マウス派）</span><span><i style="background:var(--s-key)"></i>生産管理（キーボード派）</span><span><i style="background:var(--s-novice)"></i>総務・初級（初心者）</span></div>
+  <svg viewBox="0 0 960 330" role="img" aria-label="15の場面での感情スコアの推定。3人とも最初の SPEED UP で上がり、翌日に本物の Excel で使う場面で下がる。">
+    <!-- x: 15 stages from 80 to 920 (step 60); y: +2 → 30, -2 → 250 (55px per point) -->
+    <rect class="zone-out" x="50" y="20" width="60" height="240"/>
+    <rect class="zone-out" x="710" y="20" width="60" height="240"/>
+    <line class="grid" x1="50" y1="30" x2="950" y2="30"/><line class="grid" x1="50" y1="85" x2="950" y2="85"/>
+    <line class="zero" x1="50" y1="140" x2="950" y2="140"/>
+    <line class="grid" x1="50" y1="195" x2="950" y2="195"/><line class="grid" x1="50" y1="250" x2="950" y2="250"/>
+    <text class="ax" x="40" y="34" text-anchor="end">+2</text><text class="ax" x="40" y="89" text-anchor="end">+1</text><text class="ax" x="40" y="144" text-anchor="end">0</text><text class="ax" x="40" y="199" text-anchor="end">−1</text><text class="ax" x="40" y="254" text-anchor="end">−2</text>
+    <polyline fill="none" stroke="var(--s-key)" stroke-width="2.5" stroke-dasharray="6 4" points="80,222.5 140,167.5 200,112.5 260,140 320,112.5 380,140 440,85 500,112.5 560,57.5 620,140 680,112.5 740,112.5 800,140 860,140 920,140"/>
+    <polyline fill="none" stroke="var(--s-mouse)" stroke-width="3" points="80,195 140,140 200,140 260,30 320,140 380,140 440,112.5 500,57.5 560,85 620,57.5 680,85 740,167.5 800,112.5 860,85 920,85"/>
+    <polyline fill="none" stroke="var(--s-novice)" stroke-width="3" points="80,250 140,195 200,222.5 260,140 320,167.5 380,167.5 440,167.5 500,85 560,167.5 620,85 680,85 740,222.5 800,140 860,112.5 920,112.5"/>
+    <g fill="var(--surface)" stroke-width="2.5">
+      <circle cx="260" cy="30" r="5" stroke="var(--s-mouse)"/><circle cx="740" cy="167.5" r="5" stroke="var(--s-mouse)"/>
+      <circle cx="200" cy="222.5" r="5" stroke="var(--s-novice)"/><circle cx="740" cy="222.5" r="5" stroke="var(--s-novice)"/><circle cx="80" cy="250" r="5" stroke="var(--s-novice)"/>
+    </g>
+    <text class="ax" x="270" y="34">初めての SPEED UP</text>
+    <text class="ax" x="748" y="238">本物のExcelで迷う</text>
+    <g class="st" text-anchor="middle">
+      <text x="80" y="278">案内</text><text x="140" y="278">開く</text><text x="200" y="278">診断</text><text x="260" y="278">初の加速</text><text x="320" y="278">弱点</text>
+      <text x="380" y="278">練習</text><text x="440" y="278">落とし穴</text><text x="500" y="278">再現</text><text x="560" y="278">FINAL</text><text x="620" y="278">前後比較</text>
+      <text x="680" y="278">カード</text><text x="740" y="278">実務で使う</text><text x="800" y="278">翌日</text><text x="860" y="278">RESCUE</text><text x="920" y="278">1週間</text>
+    </g>
+    <g class="ax" text-anchor="middle"><text x="80" y="296">外</text><text x="740" y="296">外</text></g>
+  </svg>
+</div>
+<div class="callout"><b>読み取れること：</b>3人の曲線がいちばん下がるのは、アプリの外にある「実務で使う」です。初心者は入口（案内・診断）でも低く、そこを越えた人だけが「再現」で大きく上がります。上級者は全体が平らで、上がるのは FINAL と落とし穴の知識だけです。</div>
+
+<h2><span class="n">03</span>Journey Map</h2>
+<p class="sub">横にスクロールできます。黄色の列はアプリの外の場面です。<span class="pain">赤字＝痛点</span>、<span class="opp">緑字＝機会</span>。</p>
+<div class="jm">
+<table>
+<thead><tr>
+  <th></th>
+  <th class="out"><small>BEFORE</small>案内を受ける</th>
+  <th><small>ENTRY</small>ページを開く</th>
+  <th><small>DIAGNOSE</small>60秒診断</th>
+  <th><small>EXPERIENCE</small>初めての SPEED UP</th>
+  <th><small>DISCOVER</small>弱点診断</th>
+  <th><small>USE</small>練習（1回目）</th>
+  <th><small>DISCOVER</small>落とし穴</th>
+  <th><small>RETRY</small>別データで再現</th>
+  <th><small>APPLY</small>FINAL</th>
+  <th><small>APPLY</small>BEFORE / AFTER</th>
+  <th><small>RETAIN</small>SPEED CARD</th>
+  <th class="out"><small>REAL WORK</small>実務の Excel で使う</th>
+  <th><small>RETAIN</small>翌日チェック</th>
+  <th><small>SUPPORT</small>困った瞬間の RESCUE</th>
+  <th><small>RETAIN</small>1週間後・+1技</th>
+</tr></thead>
+<tbody>
+<tr><th>接点</th>
+  <td class="out">上司・研修担当からのメール／朝礼</td><td>ホーム（PC）</td><td>シミュレーター・5,000行</td><td>AHA カード</td><td>診断結果画面</td><td>ミッション画面・ヒント</td><td>DISCOVERY カード</td><td>ミッション画面</td><td>16:00 DEADLINE</td><td>結果画面</td><td>カード・QR・予定(.ics)</td><td class="out">自分の業務ファイル・本物の Excel</td><td>翌日のホーム／スマホ</td><td>RESCUE（PC/スマホ）</td><td>7日後のホーム</td></tr>
+<tr><th>行動</th>
+  <td class="out">案内を開く、後回しにする</td><td>見出しを読み、ボタンを押す</td><td>いつもの方法で6工程</td><td>勧められたキーを押す</td><td>🟢🟡🔴 と今日の3つを見る</td><td>マウスで解く／ヒントを見る</td><td>カードを読み、もう一度押す</td><td>キーで解く</td><td>6工程を判断しながら</td><td>数字を見る</td><td>保存・スマホへ送る</td><td class="out">思い出して押す／忘れる</td><td>✓△? を答える</td><td>困りごとを選ぶ→キーを見る</td><td>使った回数を見る、+1を選ぶ</td></tr>
+<tr><th>心の声</th>
+  <td class="out"><q>また研修？忙しいのに</q></td><td><q>60秒なら付き合うか</q></td><td><q>いつもどおりでいいんだよね</q>／初心者：<q>何をすればいいの</q></td><td><q>え、一瞬で行った</q></td><td><q>選択と検索に時間を使ってたのか</q>／英語：<q>BOTTLENECK って何</q></td><td><q>マウスで解けたけど、もっと速いのか</q></td><td><q>なんで止まった？…空白か</q></td><td><q>今度は自分でできた</q></td><td><q>どれを使えばいい？</q></td><td><q>本当に速くなってる</q></td><td><q>明日これだけ使えばいいのね</q></td><td class="out"><q>あれ、完全一致はどこ？</q>／<q>何のキーだっけ</q></td><td><q>1つは使えた</q>／<q>機会がなかった</q></td><td><q>あ、ここに戻れば分かる</q></td><td><q>1つ増やすくらいなら</q></td></tr>
+<tr><th>感情</th>
+  <td class="out face">😩</td><td class="face">🤔</td><td class="face">😐／😰</td><td class="face">😮⚡</td><td class="face">🙂／😕</td><td class="face">😐</td><td class="face">😳→🧠</td><td class="face">😄</td><td class="face">😤→😊</td><td class="face">😊</td><td class="face">🙂</td><td class="out face">😕</td><td class="face">🙂</td><td class="face">😌</td><td class="face">🙂</td></tr>
+<tr><th>痛点</th>
+  <td class="out pain">案内文・URL・所要時間の伝え方がプロダクト外。「研修」と書かれた時点で負ける</td>
+  <td class="pain">スマホは主ボタンが1画面目の外（SE 644px／画面568px）</td>
+  <td class="pain">文字の半分（109字）が13px未満。タイマーが読む時間も数え、初心者を焦らせる</td>
+  <td class="pain">倍率（2×）は出るが、スキップした人には体験が残らない</td>
+  <td class="pain">355字・英語ラベル7個。「CALCULATE」「FILTER」が分からない層がいる</td>
+  <td class="pain">問題の生産実績データが、品質や事務の人の仕事と違う</td>
+  <td class="pain">TRAP・DISCOVERY と英語が続く。初心者は「失敗した」と受け取りうる</td>
+  <td class="pain">ヒントを見た人は「もう一度」が続き、時間が読めない（PRACTICE時）</td>
+  <td class="pain">カウントダウンが初心者には圧になる</td>
+  <td class="pain">407字で全画面中最多。疲れている最後に一番重い</td>
+  <td class="pain">QR は社内公開時だけ有効。localhost では送れない</td>
+  <td class="out pain">完全一致がシミュレーターと違い「オプション(T) >>」の中。日本語キーボードの Alt+= も手間取る</td>
+  <td class="pain">3技すべてに答えないと保存できない</td>
+  <td class="pain">URL を覚えていないと戻れない。SE では7項目中3つしか見えない</td>
+  <td class="pain">「使えた」は自己申告だけ。研修担当者からは見えない</td></tr>
+<tr><th>機会</th>
+  <td class="out opp">「60秒であなたのExcelの速さを測る」案内文テンプレートと職場掲示用QR</td>
+  <td class="opp">スマホ用に見出しを縮め、主ボタンを最初の画面に</td>
+  <td class="opp">本文の最小を14pxに。タイマーは最初の操作から数える（BEFORE/AFTER も同じ基準に）</td>
+  <td class="opp">「あとで」を選んだ人にも、練習の最初で同じ体験を必ず入れる</td>
+  <td class="opp">「移動」を主、MOVE を従に。文章は2行まで、詳細は開閉式に</td>
+  <td class="opp">職種別のデータ（品質＝検査記録、事務＝経費一覧）を選べるように</td>
+  <td class="opp">「発見！」を主表示に。英語は小さく添える</td>
+  <td class="opp">FAST と同じく、PRACTICE でも残り時間の目安を表示</td>
+  <td class="opp">開始画面で「時間を過ぎても続けられる」を大きく</td>
+  <td class="opp">1つの数字と1文を先頭に、工程の表は開閉式に</td>
+  <td class="opp">社内ポータルでの公開手順を研修担当者向けに用意</td>
+  <td class="out opp">シミュレーターの置換ダイアログを本物と同じ折りたたみに。カードに「本物の Excel ではここ」を1行添える</td>
+  <td class="opp">1つ答えたら保存できるように。「全部使った」の1タップも</td>
+  <td class="opp">お気に入り登録の案内、短い社内URL、困りごとのキーワード検索</td>
+  <td class="opp">研修担当者が全体の利用状況を集計できる共有の記録</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="n">04</span>決定的な瞬間</h2>
+<p class="sub">ここで印象が決まり、続けるか離れるかが分かれる場面です。現状の対応の度合いを付けました。</p>
+<div class="mot">
+  <article><span class="when">MoT 1 · 開始から10秒</span><h3>「研修じゃない」と思えるか</h3><p class="small">アプリ内は、ボタン1つで2秒以内にシミュレーターが表示されます。ただし受講者の気持ちは、案内メールを読んだ時点ですでに決まり始めています。</p><div class="st-row"><span class="pill good">アプリ内：対応済み</span><span class="pill risk">案内：範囲外</span></div></article>
+  <article><span class="when">MoT 2 · 開始から60秒以内</span><h3>初めての SPEED UP</h3><p class="small">マウス派は2.5秒→1.1秒で、キーボード派も「もう速い」と認められます。一方、初心者で「あとで」を選んだ人は、この体験を持たないまま診断を終えます。</p><div class="st-row"><span class="pill good">マウス派・キーボード派</span><span class="pill mid">初心者：取りこぼしあり</span></div></article>
+  <article><span class="when">MoT 3 · 練習の2回目</span><h3>落とし穴を「失敗」でなく「発見」と感じるか</h3><p class="small">減点はせず、読んでいる間はタイマーも止まります。ただ見出しが「REAL EXCEL TRAP」「DISCOVERY」と英語で、初心者は言葉の意味が取れないまま次へ進む可能性があります。</p><div class="st-row"><span class="pill good">仕組み：対応済み</span><span class="pill mid">言葉：改善余地</span></div></article>
+  <article><span class="when">MoT 4 · 翌日の業務中</span><h3>本物の Excel で初めて使う</h3><p class="small">ここで成功すれば「研修の技」が「自分の技」になり、失敗すれば忘れます。置換の完全一致が見つからない差は、まさにこの瞬間に出ます。プロダクトがその場にいない、最大の空白です。</p><div class="st-row"><span class="pill risk">プロダクトの外・最重要</span></div></article>
+  <article><span class="when">MoT 5 · 困った瞬間</span><h3>「またここを使いたい」と思い出せるか</h3><p class="small">要件 §30 の成功状態そのものです。RESCUE の中身は2クリックで届きますが、そこへ戻る道（URL・お気に入り・スマホ）を受講者が持っていなければ始まりません。</p><div class="st-row"><span class="pill mid">中身：対応済み</span><span class="pill risk">戻る道：弱い</span></div></article>
+</div>
+
+<h2><span class="n">05</span>画面の計測</h2>
+<p class="sub">全18画面を実際に表示し、見えている説明文（シートの中身は除く）を数えました。<span class="mono">最小</span>はいちばん小さい文字の大きさです。赤い行は、文字量・英語・小さい文字のどれかが多い画面です。</p>
+<div class="tbl">
+<table>
+<thead><tr><th>画面</th><th>Journey</th><th class="num">文字数</th><th class="num">英語ラベル</th><th class="num">ボタン</th><th class="num">最小</th><th class="num">13px未満の字</th><th>英語の例</th></tr></thead>
+<tbody>
+<tr><td>ホーム（初回）</td><td>開く</td><td class="num"><span class="bar" style="width:22px"></span>223</td><td class="num">3</td><td class="num">2</td><td class="num">13px</td><td class="num">0</td><td>SPEED CHECK, JOB FIRST</td></tr>
+<tr class="flag"><td>60秒診断・1問目</td><td>診断</td><td class="num"><span class="bar" style="width:20px"></span>204</td><td class="num">2</td><td class="num">1</td><td class="num">10px</td><td class="num">109</td><td>MOVE SELECT FIND …</td></tr>
+<tr><td>AHA の提案</td><td>初SPEED UP</td><td class="num"><span class="bar" style="width:8px"></span>78</td><td class="num">0</td><td class="num">2</td><td class="num">11px</td><td class="num">6</td><td>—</td></tr>
+<tr><td>SPEED UP</td><td>初SPEED UP</td><td class="num"><span class="bar" style="width:8px"></span>82</td><td class="num">1</td><td class="num">1</td><td class="num">11px</td><td class="num">16</td><td>SPEED UP</td></tr>
+<tr class="flag"><td>診断結果</td><td>弱点診断</td><td class="num"><span class="bar warn" style="width:36px"></span>355</td><td class="num">7</td><td class="num">3</td><td class="num">11px</td><td class="num">37</td><td>BOTTLENECK, CALCULATE, CHALLENGE</td></tr>
+<tr class="flag"><td>ミッション・1回目</td><td>練習</td><td class="num"><span class="bar" style="width:18px"></span>183</td><td class="num">1</td><td class="num">2</td><td class="num">10px</td><td class="num">86</td><td>MISSION EDIT</td></tr>
+<tr><td>結果＋DISCOVERY</td><td>練習</td><td class="num"><span class="bar" style="width:12px"></span>115</td><td class="num">2</td><td class="num">2</td><td class="num">11px</td><td class="num">9</td><td>DISCOVERY, TRY FASTER</td></tr>
+<tr><td>REAL EXCEL TRAP</td><td>落とし穴</td><td class="num"><span class="bar" style="width:21px"></span>209</td><td class="num">2</td><td class="num">1</td><td class="num">13px</td><td class="num">0</td><td>DISCOVERY, REAL EXCEL TRAP</td></tr>
+<tr class="flag"><td>ミッション一覧</td><td>練習</td><td class="num"><span class="bar" style="width:28px"></span>284</td><td class="num">8</td><td class="num">8</td><td class="num">11px</td><td class="num">56</td><td>TODAY'S MISSIONS, PRACTICE, CHALLENGE</td></tr>
+<tr><td>FINAL 導入</td><td>FINAL</td><td class="num"><span class="bar" style="width:10px"></span>104</td><td class="num">1</td><td class="num">1</td><td class="num">14px</td><td class="num">0</td><td>START</td></tr>
+<tr class="flag"><td>BEFORE / AFTER</td><td>前後比較</td><td class="num"><span class="bar warn" style="width:41px"></span>407</td><td class="num">7</td><td class="num">1</td><td class="num">12px</td><td class="num">27</td><td>MISSION COMPLETE, BEFORE, AFTER</td></tr>
+<tr><td>SPEED CARD</td><td>カード</td><td class="num"><span class="bar" style="width:22px"></span>225</td><td class="num">3</td><td class="num">5</td><td class="num">13px</td><td class="num">0</td><td>YOUR EXCEL SPEED CARD</td></tr>
+<tr class="flag"><td>翌日のホーム</td><td>翌日</td><td class="num"><span class="bar" style="width:32px"></span>323</td><td class="num">8</td><td class="num">5</td><td class="num">12px</td><td class="num">8</td><td>NEXT DAY, DEADLINE, MISSION</td></tr>
+<tr><td>翌日チェック</td><td>翌日</td><td class="num"><span class="bar" style="width:12px"></span>120</td><td class="num">0</td><td class="num">10</td><td class="num">14px</td><td class="num">0</td><td>—</td></tr>
+<tr><td>RESCUE 一覧</td><td>RESCUE</td><td class="num"><span class="bar" style="width:13px"></span>131</td><td class="num">1</td><td class="num">7</td><td class="num">13px</td><td class="num">0</td><td>SECOND RESCUE</td></tr>
+<tr><td>RESCUE カード</td><td>RESCUE</td><td class="num"><span class="bar" style="width:17px"></span>171</td><td class="num">1</td><td class="num">3</td><td class="num">11px</td><td class="num">17</td><td>SECOND RESCUE JOB</td></tr>
+<tr><td>1週間</td><td>1週間</td><td class="num"><span class="bar" style="width:16px"></span>162</td><td class="num">1</td><td class="num">2</td><td class="num">12px</td><td class="num">21</td><td>RESCUE</td></tr>
+</tbody>
+</table>
+</div>
+<div class="two">
+  <div><h3>スマホの1画面目</h3><div class="tbl" style="margin-top:8px"><table style="min-width:0"><thead><tr><th>端末</th><th class="num">画面の高さ</th><th class="num">主ボタンの位置</th><th class="num">RESCUE 項目</th></tr></thead><tbody>
+    <tr class="flag"><td>iPhone SE</td><td class="num">568px</td><td class="num">644–708px</td><td class="num">3 / 7</td></tr>
+    <tr class="flag"><td>iPhone 13</td><td class="num">664px</td><td class="num">616–680px</td><td class="num">5 / 7</td></tr>
+    <tr><td>Pixel 5</td><td class="num">727px</td><td class="num">618–682px</td><td class="num">6 / 7</td></tr>
+  </tbody></table></div></div>
+  <div><h3>シミュレーターと本物の Excel の差</h3><ul class="small">
+    <li><b>置換の完全一致</b>：本物は「オプション(T) >>」を押さないと出てきません。シミュレーターは最初から表示しています。落とし穴で教えた対処を、翌日その場所で探すことになります。</li>
+    <li><b>Alt + =</b>：日本語キーボードでは「Alt + Shift + ほ」です（前回の修正でヒント3と RESCUE に注記済み）。</li>
+    <li><b>データ</b>：練習は生産実績だけです。品質や事務の人は、自分の表に置き換えて考える一手間が要ります。</li>
+  </ul></div>
+</div>
+
+<h2><span class="n">06</span>改善の優先順位</h2>
+<p class="sub">影響は、§30 の成功状態（「速くなった。困ったらまた使いたい」）にどれだけ効くかで付けています。前回すでに直した17件は含めていません。</p>
+<div class="tbl">
+<table>
+<thead><tr><th>#</th><th>影響</th><th>場面</th><th>改善</th><th>手間</th><th>確かめ方（KPI）</th></tr></thead>
+<tbody>
+<tr><td class="num">1</td><td><span class="sev h">高</span></td><td>実務で使う</td><td>置換ダイアログを本物と同じ折りたたみ式にし、落とし穴カードと RESCUE に「本物の Excel ではオプション(T)>>の中」を添える</td><td>小</td><td>翌日の「使った」率（Next-Day Use）</td></tr>
+<tr><td class="num">2</td><td><span class="sev h">高</span></td><td>全体</td><td>画面の言葉を日本語主・英語従に（例：「移動 <small>MOVE</small>」「発見！ <small>DISCOVERY</small>」）。ブランドの英語は見出しの飾りにとどめる</td><td>小</td><td>FAST 完了率、診断から練習への移行率</td></tr>
+<tr><td class="num">3</td><td><span class="sev h">高</span></td><td>前後比較・診断結果</td><td>1つの数字と1文を先頭に置き、工程表と説明は開閉式に。目標は各150字以内</td><td>小</td><td>SPEED CARD への到達率</td></tr>
+<tr><td class="num">4</td><td><span class="sev h">高</span></td><td>開く・RESCUE（スマホ）</td><td>スマホでは見出しを縮め、主ボタンと RESCUE の7項目を1画面目に収める</td><td>小</td><td>スマホでの RESCUE 再訪数</td></tr>
+<tr><td class="num">5</td><td><span class="sev h">高</span></td><td>案内・再訪</td><td>研修担当者向けキット：案内文テンプレート、職場掲示用 QR、社内ポータルでの公開手順、お気に入り登録の案内</td><td>中</td><td>案内から開始までの率、Time to First Speed-Up</td></tr>
+<tr><td class="num">6</td><td><span class="sev m">中</span></td><td>診断・練習</td><td>本文の最小を14pxに。タイマーは最初の操作から数える（BEFORE/AFTER も同じ基準に揃える）</td><td>小</td><td>初心者の診断途中終了率</td></tr>
+<tr><td class="num">7</td><td><span class="sev m">中</span></td><td>初 SPEED UP</td><td>AHA を「あとで」にした人には、練習の最初のミッションで同じ体験を必ず入れる</td><td>小</td><td>Time to First Speed-Up の未達率</td></tr>
+<tr><td class="num">8</td><td><span class="sev m">中</span></td><td>翌日</td><td>1つ答えれば保存できるように。「全部使った」の1タップも追加</td><td>小</td><td>翌日チェックの回答率</td></tr>
+<tr><td class="num">9</td><td><span class="sev m">中</span></td><td>練習</td><td>職種別のデータセット（品質：検査記録、事務：経費・勤怠）を選べるように</td><td>中</td><td>INDEPENDENT 到達率（職種別）</td></tr>
+<tr><td class="num">10</td><td><span class="sev m">中</span></td><td>研修担当者</td><td>受講者の記録を集計できる共有の保存先（匿名の KPI だけでも可）</td><td>大</td><td>効果報告に使えるデータの有無</td></tr>
+<tr><td class="num">11</td><td><span class="sev l">低</span></td><td>RESCUE</td><td>困りごとのキーワード検索（「重複」「まとめて消す」など）</td><td>中</td><td>RESCUE の離脱率</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2><span class="n">07</span>実際の受講者で確かめること</h2>
+<div class="two">
+  <div><h3>仮説</h3><ol class="small">
+    <li>感情の最も低い点は「翌日、本物の Excel で使う」場面である</li>
+    <li>英語ラベルを日本語主にすると、初級者の FAST 完了率が上がる</li>
+    <li>初心者の半数以上が AHA を「あとで」にする</li>
+    <li>前後比較の画面で、工程の表まで読む人は少ない</li>
+    <li>スマホからの RESCUE 再訪は、QR で取り込んだ人に偏る</li>
+  </ol></div>
+  <div><h3>確かめ方（5〜8人で足ります）</h3><ul class="small">
+    <li><b>受講の観察</b>：各職種から1〜2人。画面を見ながら声に出してもらい、止まった場所と言葉を記録</li>
+    <li><b>翌日の聞き取り</b>：「どの技を、どのファイルで、うまくいったか」を5分</li>
+    <li><b>記録の回収</b>：記録画面の JSON 書き出しで、Time to First Speed-Up・ヒント依存率・翌日使用を集計</li>
+    <li><b>1週間後</b>：RESCUE を開いた回数と、そのきっかけ</li>
+  </ul></div>
+</div>
+
+<footer>
+  分析の根拠：<code>tests/journey.mjs</code>（3人分の実操作シミュレーション）、全18画面の自動計測、端末3機種の1画面目の計測。感情スコアは観察からの推定で、実際の受講者のデータではありません。自動操作は人間より速いため、時間は下限の目安です。
+</footer>
+</main>
