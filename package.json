@@ -6,7 +6,8 @@
   "scripts": {
     "start": "npx http-server -p 8123 -c-1 .",
     "test": "node --test tests/sheet.test.js",
-    "e2e": "node tests/e2e.mjs"
+    "e2e": "node tests/e2e.mjs",
+    "journey": "node tests/journey.mjs"
   },
   "license": "Apache-2.0"
 }

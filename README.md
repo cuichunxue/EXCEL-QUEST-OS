@@ -32,7 +32,7 @@ GitHub Pages 等にそのまま置けます。記録はブラウザの localStor
 | REAL EXCEL TRAP | RETRY | 空白セルで止まる／選択範囲内だけ検索／部分一致置換（A-010）／オートSUMが空白で止まる／シート最下部 |
 | FINAL | 16:00 DEADLINE | 15:55 上司の依頼、05:00 カウントダウン。問題文にキー名なし。時間超過しても最後まで可 |
 | BEFORE / AFTER | 結果 | SPEED CHECK と FINAL を同じ6工程・同じ行数で比較。両方完了した工程のみ比較し、条件が揃わなければ比較しない |
-| SPEED CARD | 終了時 | 得意／次に伸ばす／明日使う3技。印刷・PDF・テキストコピー |
+| SPEED CARD | 終了時（1技能が△になった時点で自動作成） | 得意／次に伸ばす／明日使う3技。QR でスマホへ、翌日 9:00 の予定（.ics）、印刷・コピー |
 | NEXT DAY | 翌日ホーム | 「昨日の3技、1つ使えた？」✓／△／?。忘れた技は30秒復習へ |
 | 30 SECOND RESCUE | いつでも | 困りごと7種 → JOB → KEY → 10秒デモ → 注意点 → Excelで試す |
 | 1 WEEK LOOP | 7日後ホーム | 今週使った技能 → 次の1技を追加（3 → 定着 → +1） |
@@ -90,7 +90,10 @@ Mac では `⌘` を `Ctrl` として扱います。
 npm test                         # シートモデルの単体テスト（Node）
 npx http-server -p 8123 . &      # E2E は Playwright が必要
 npm run e2e
+npm run journey                  # 3ペルソナ（マウス派・キーボード派・初心者）で Journey を通し、各ステージを計測
 ```
+
+Journey Map の検証結果と修正内容は [docs/JOURNEY_MAP.md](docs/JOURNEY_MAP.md) にまとめています。
 
 E2E は SPEED CHECK → AHA → BOTTLENECK → MISSION（TRAP含む）→ FINAL → BEFORE/AFTER → SPEED CARD → NEXT DAY → 1 WEEK → RESCUE を実際のキー操作で通します。
 

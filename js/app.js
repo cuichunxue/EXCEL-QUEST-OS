@@ -51,7 +51,15 @@
       close();
       if (fn) fn();
     });
-    el.addEventListener('keydown', (e) => e.stopPropagation());
+    el.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Escape') {
+        // 「OK、続ける」「次へ」系の1ボタンなら Esc でも進める（誤操作で止まらない）
+        // ただし結果カードは対象外（検索ダイアログを閉じる Esc の勢いで結果を読み飛ばさない）
+        const btns = el.querySelectorAll('[data-ov]');
+        if (btns.length === 1 && el.querySelector('.ov-trap')) btns[0].click();
+      }
+    });
     setTimeout(() => {
       const p = el.querySelector('.primary') || el.querySelector('button');
       if (p) p.focus({ preventScroll: true });
@@ -204,6 +212,7 @@
       L.hintBtn.disabled = lv >= 3;
     }
     L.hintBtn.addEventListener('click', () => {
+      L.hintBtn.classList.remove('pulse');
       const t = getTracker();
       if (!t || t.hint >= 3) return;
       t.hint++;
@@ -310,7 +319,7 @@
                 ? `<p class="mobile-note">📱 スマホでは <b>30秒RESCUE・SPEED CARD・復習・操作デモ</b> が使えます。<br>スピードチェックは PC＋キーボードで。</p>
                    <div class="hero-btns"><button type="button" class="btn btn-start primary" data-go="rescue">30秒RESCUE ▶</button>
                    ${lastCard ? '<button type="button" class="btn" data-go="card">SPEED CARD</button>' : ''}</div>`
-                : `<div class="hero-btns"><button type="button" class="btn btn-start primary" data-go="speedcheck">▶ 60秒でチェックする</button></div>
+                : `<div class="hero-btns"><button type="button" class="btn btn-start primary" data-go="speedcheck">▶ ${st.check ? 'もう一度 60秒で測る' : '60秒でチェックする'}</button></div>
                    <p class="hero-meta">${img('icon-timer.png', '', 'ico')} 約60秒 ・ マウスでもOK ・ 押した瞬間に始まります</p>`
             }
           </div>
@@ -318,7 +327,7 @@
         <section class="home-tiles">
           ${hasToday ? `<button type="button" class="tile" data-go="hub">${img('icon-mission.png', '', 'ico')}<b>今日のミッションの続き</b><span>今日の3技：${st.today.picks.map((p) => esc(SKILLS[p].name)).join('・')}</span></button>` : ''}
           <button type="button" class="tile" data-go="rescue">${img('icon-warning.png', '', 'ico')}<b>今、Excelで困ってる？</b><span>30 SECOND RESCUE ── 困った瞬間に30秒で</span></button>
-          ${lastCard ? `<button type="button" class="tile" data-go="card">${img('icon-clear.png', '', 'ico')}<b>YOUR SPEED CARD</b><span>明日使う3技：${lastCard.three.map((k) => SKILLS[k].keys.join('+')).join(' / ')}</span></button>` : ''}
+          ${lastCard ? `<button type="button" class="tile" data-go="card">${img('icon-clear.png', '', 'ico')}<b>YOUR SPEED CARD</b><span>${st.mySkills.length > 3 ? '今週の技' : '明日使う3技'}：${(st.mySkills.length > 3 ? st.mySkills : lastCard.three).map((k) => SKILLS[k].keys.join('+')).join(' / ')}</span></button>` : ''}
           ${!IS_MOBILE && st.check ? `<button type="button" class="tile" data-go="final">${img('icon-trophy.png', '', 'ico')}<b>FINAL｜16:00 DEADLINE</b><span>総合実務MISSION（約5分）</span></button>` : ''}
         </section>
         <section class="home-why">
@@ -340,8 +349,8 @@
   SCREENS.speedcheck = function () {
     const steps = EQ.stepSet(seed());
     const results = [];
-    const CAP = [20000, 15000, 15000, 15000, 15000, 15000];
-    let i = 0, tracker = null, finished = false, timerT = null, phase = 'check';
+    const CAP = [20000, 12000, 12000, 12000, 12000, 12000]; // 最大 約80秒
+    let i = 0, tracker = null, finished = false, timerT = null, phase = 'check', stuck = 0;
     const L = layout(app, { badge: 'SPEED CHECK', hints: false, skipLabel: 'スキップ（次へ）', timerLabel: 'TIME（実測）' });
     const sim = new EQ.Simulator(L.simHost, { historyEl: L.history, onEvent });
     EQ._sim = sim;
@@ -391,16 +400,34 @@
       results[i] = r;
       if (done) Sound.play('correct');
       if (i === 0) return ahaOffer(r);
-      if (timedOut) {
+      if (timedOut || !done) {
+        // 2問続けて手が止まったら「残りは今日はスキップ」を提案（診断で疲れさせない）
+        const idle = r.mouse + r.kb === 0;
+        stuck = idle ? stuck + 1 : 0;
+        const remaining = steps.length - i - 1;
+        if (stuck >= 2 && remaining > 0) {
+          overlay(
+            `${navi('smile', 'OK！ここからは<b>練習で一緒にやりましょう</b>。<br>残りは今日はスキップしてもOKです。')}
+             <div class="ov-btns"><button class="btn primary" data-ov="finish">結果を見る ▶</button><button class="btn btn-ghost" data-ov="next">続ける（あと${remaining}問）</button></div>`,
+            { next, finish: () => {
+              for (let k = i + 1; k < steps.length; k++) results[k] = { key: steps[k].key, cat: steps[k].cat, ms: 0, done: false, timedOut: false, skipped: true, mouse: 0, kb: 0, scCount: 0 };
+              complete();
+            } },
+            'ov-mini'
+          );
+          return;
+        }
+        if (!timedOut) return next();
         const o = overlay(`${navi('smile', 'OK！ここは<b>伸びしろ</b>。次へ進みます。')}<div class="ov-btns"><button class="btn primary" data-ov="next">次へ ▶</button></div>`, { next: next }, 'ov-mini');
         setTimeout(() => {
           if (document.body.contains(o.el)) {
             o.close();
             next();
           }
-        }, 1400);
+        }, 1100);
         return;
       }
+      stuck = 0;
       setTimeout(next, done ? 450 : 0);
     }
     function next() {
@@ -435,20 +462,36 @@
             EQ._ahaBefore = r;
             begin(0, true);
           },
-          skip: next,
+          skip: () => {
+            if (r.mouse + r.kb === 0) stuck = 1;
+            next();
+          },
         }
       );
     }
     function ahaResult(r) {
       const before = EQ._ahaBefore;
-      if (r.done) {
-        recordSpeedUp(before.ms, r.ms, before.done);
-        Sound.play('speed-up');
-        S.recordAttempt({ id: 'speedcheck:aha', skill: 'ctrlArrow', variant: 'AHA', ms: r.ms, done: true, usedTarget: r.usedTarget, hint: 3, mouse: r.mouse, kb: r.kb, scCount: r.scCount, mobile: IS_MOBILE });
+      const fast = r.done && (r.usedTarget || r.usedAlt);
+      const faster = fast && (!before.done || r.ms < before.ms);
+      if (r.done) S.recordAttempt({ id: 'speedcheck:aha', skill: 'ctrlArrow', variant: 'AHA', ms: r.ms, done: true, usedTarget: r.usedTarget, hint: 3, mouse: r.mouse, kb: r.kb, scCount: r.scCount, mobile: IS_MOBILE });
+      if (!faster) {
+        // キーを使わなかった／速くならなかった：無理に「速くなった」とは言わない
+        overlay(
+          `<div class="aha">
+            <div class="aha-tag">${r.done ? '✓ OK' : 'OK'}</div>
+            ${navi('smile', r.done ? `今回 <b>${sec(r.ms)}</b>（実測）。<br>キーはいつでも <b>30秒RESCUE</b> で見返せます。今日の練習でもう一度出てきます。` : 'あとで練習で出てきます。')}
+            <div class="ov-btns"><button class="btn primary" data-ov="next">残り5問 ▶</button>${r.done ? '' : '<button class="btn btn-ghost" data-ov="again">もう一度試す</button>'}</div>
+          </div>`,
+          { next, again: () => (sim.setEnabled(true), begin(0, true)) }
+        );
+        return;
       }
+      recordSpeedUp(before.ms, r.ms);
+      Sound.play('speed-up');
+      const ratio = before.done && r.ms > 0 ? Math.max(1, Math.round(before.ms / r.ms)) : null;
       overlay(
         `<div class="aha">
-          <div class="aha-tag">⚡ SPEED UP</div>
+          <div class="aha-tag">⚡ SPEED UP${ratio && ratio >= 2 ? ` <span class="ratio">${ratio}×</span>` : ''}</div>
           <div class="speedup"><div><span class="lbl">いつもの方法（実測）</span><b>${before.done || before.timedOut ? sec(before.ms) + (before.done ? '' : '+') : '—'}</b></div><div class="arr">→</div><div class="after"><span class="lbl">今回（実測）</span><b>${sec(r.ms)}</b></div></div>
           <div class="aha-pose">${img('navi-start.png', '', 'aha-img')}<div class="nv-bubble">「キーを覚えた」より、<b>「大量データの移動が速くなった」</b>。<br>残り5問は、またいつものやり方でOK。</div></div>
           <div class="ov-btns"><button class="btn primary" data-ov="next">残り5問 ▶</button></div>
@@ -481,8 +524,8 @@
   // ================================================================== BOTTLENECK → 今日は3つだけ
   function rate(r) {
     if (!r || !r.done) return 'r';
-    if (r.usedTarget || r.ms < 6000) return 'g';
-    return 'y';
+    if (r.usedTarget) return 'g';
+    return r.ms > 10000 ? 'r' : 'y';
   }
   SCREENS.bottleneck = function () {
     const chk = S.state.check;
@@ -491,11 +534,18 @@
     chk.steps.forEach((s) => (byCat[s.cat] = s));
     const sev = { r: 2, y: 1, g: 0 };
     const order = CATS.slice().sort((a, b) => sev[rate(byCat[b])] - sev[rate(byCat[a])] || (byCat[b] ? byCat[b].ms : 0) - (byCat[a] ? byCat[a].ms : 0));
-    const picks = order.slice(0, 3).map((c) => CAT_SKILL[c]);
+    // 今日の技は「速いルートを使っていない」カテゴリから最大3つ（FAST＝1〜3技能）
+    const weak = order.filter((c) => rate(byCat[c]) !== 'g');
+    const allFast = weak.length === 0;
+    const picks = (allFast ? order : weak).slice(0, 3).map((c) => CAT_SKILL[c]);
     S.state.today = { date: S.today(), picks };
     S.save();
     const tot = (k) => chk.steps.reduce((t, s) => t + (s[k] || 0), 0);
-    const label = { g: '速い', y: '伸びしろ', r: '大きな伸びしろ' };
+    const label = { g: '速いルート', y: '伸びしろ', r: '大きな伸びしろ' };
+    const top2 = weak.slice(0, 2).map((c) => `「${CAT_JA[c]}」`).join('と');
+    const msg = allFast
+      ? '<b>もう速いルートを使えています！</b><br>今日は 16:00 DEADLINE で腕試しをどうぞ。'
+      : `あなたは${top2}に<b>時間を使っています</b>。<br><b>今日は${picks.length === 3 ? '3つ' : picks.length + 'つ'}だけ。</b>ここから練習しましょう。`;
     app.innerHTML = `
       <div class="page bottleneck">
         <h1 class="ttl">YOUR EXCEL BOTTLENECK</h1>
@@ -504,22 +554,22 @@
           ${CATS.map((c) => {
             const s = byCat[c];
             const r = rate(s);
-            const w = s && s.done ? Math.max(18, 100 - (s.ms / 15000) * 80) : 14;
-            return `<div class="bn-row bn-${r}"><span class="bn-cat">${c}<small>${CAT_JA[c]}</small></span><span class="bn-bar"><i style="width:${w}%"></i></span><span class="bn-dot" aria-label="${label[r]}"></span><span class="bn-val">${s && s.done ? sec(s.ms) : '未完了'}<small>${label[r]}</small></span></div>`;
+            const w = s && s.done ? Math.max(18, 100 - (s.ms / 12000) * 80) : 14;
+            return `<div class="bn-row bn-${r}"><span class="bn-cat">${c}<small>${CAT_JA[c]}</small></span><span class="bn-bar"><i style="width:${w}%"></i></span><span class="bn-dot" aria-label="${label[r]}"></span><span class="bn-val">${s && s.done ? sec(s.ms) : s && s.timedOut ? sec(s.ms) + '+' : '—'}<small>${label[r]}</small></span></div>`;
           }).join('')}
         </div>
         <div class="bn-ops">マウス操作 <b>${tot('mouse')}</b> 回 ／ キーボード操作 <b>${tot('kb')}</b> 回 ／ ショートカット <b>${tot('scCount')}</b> 回 <small>（実測）</small></div>
         <div class="today3">
-          ${navi('point', '<b>今日は3つだけ。</b>あなたの仕事でいちばん時間を取っているところから練習しましょう。', 'male')}
-          <div class="picks">${picks.map((p, k) => `<div class="pick"><span class="pick-n">${k + 1}</span><b>${esc(SKILLS[p].name)}</b><small>${SKILLS[p].cat}</small></div>`).join('')}</div>
+          ${navi('point', msg, 'male')}
+          <div class="picks picks-${picks.length}">${picks.map((p, k) => `<div class="pick"><span class="pick-n">${k + 1}</span><b>${esc(SKILLS[p].name)}</b><small>${SKILLS[p].cat}</small></div>`).join('')}</div>
         </div>
         <div class="layers">
-          <button type="button" class="layer primary" data-act="fast"><b>⚡ FAST</b><span>約3分 ── この3つだけ</span></button>
+          <button type="button" class="layer ${allFast ? '' : 'primary'}" data-act="fast"><b>⚡ FAST</b><span>約${picks.length}分 ── この${picks.length}つだけ</span></button>
           <button type="button" class="layer" data-act="hub"><b>🎮 PRACTICE</b><span>5〜8分 ── 再挑戦＋落とし穴</span></button>
-          <button type="button" class="layer" data-act="final"><b>🏆 CHALLENGE</b><span>約10分 ── 16:00 DEADLINE</span></button>
+          <button type="button" class="layer ${allFast ? 'primary' : ''}" data-act="final"><b>🏆 CHALLENGE</b><span>約10分 ── 16:00 DEADLINE</span></button>
         </div>
       </div>`;
-    app.querySelector('[data-act="fast"]').addEventListener('click', () => go('mission', { skill: picks[0], variant: 'A', queue: picks.slice(1) }));
+    app.querySelector('[data-act="fast"]').addEventListener('click', () => go('mission', { skill: picks[0], variant: 'A', queue: picks.slice(1), fast: true }));
     app.querySelector('[data-act="hub"]').addEventListener('click', () => go('hub'));
     app.querySelector('[data-act="final"]').addEventListener('click', () => go('final'));
     setTimeout(() => app.querySelector('.layer.primary').focus({ preventScroll: true }), 50);
@@ -593,19 +643,42 @@
       hc.reset();
       sim.focus();
       clearInterval(timerT);
-      timerT = setInterval(() => (L.timer.textContent = (tracker.ms() / 1000).toFixed(1)), 100);
+      let nudged = false;
+      timerT = setInterval(() => {
+        const ms = tracker.ms();
+        L.timer.textContent = (ms / 1000).toFixed(1);
+        // 手が止まった人に「答え」ではなく「考え方」を勧める
+        if (!nudged && ms > 20000 && tracker.hint === 0 && !finished) {
+          nudged = true;
+          L.bubble.innerHTML = navi('think', '手が止まったら、<b>ヒント1</b> を見てみよう。<br><small>答えではなく考え方です。</small>');
+          if (L.hintBtn) L.hintBtn.classList.add('pulse');
+        }
+      }, 100);
     }
     function onEvent(e) {
       if (!tracker || finished) return;
       tracker.handle(e);
       if (e.kind === 'trap') showTrap(e.id);
-      if (e.kind === 'commit' && step.trap === 'autosumBlank' && e.r === step.meta.cell.r && e.c === step.meta.cell.c && String(e.raw)[0] === '=' && !step.check({ sim })) showTrap('autosumBlank');
+      if (e.kind === 'commit' && step.meta && step.meta.cell) {
+        const cell = step.meta.cell;
+        const isFormula = String(e.raw)[0] === '=';
+        if (isFormula && (e.r !== cell.r || e.c !== cell.c)) {
+          // 合計を違う場所に入れた：数量列の途中に入ると以降の合計が狂うので、すぐ戻し方を示す
+          sim.toast(`合計の場所は ${EQ.addr(cell.r, cell.c)} です。間違えたら Ctrl + Z（元に戻す）でOK`, 4200);
+        } else if (isFormula && step.trap === 'autosumBlank' && !step.check({ sim })) showTrap('autosumBlank');
+      }
       if (e.kind === 'change' && step.check({ sim })) finish(true);
     }
     function showTrap(id) {
       if (shownTraps.has(id) || !TRAPS[id]) return;
       if (id === 'partial' && step.trap !== 'partial') return;
       shownTraps.add(id);
+      if (id !== step.trap && id !== 'sheetEnd') {
+        // このミッションの主題ではない落とし穴：操作を止めずに一言だけ
+        tracker.traps.push(id);
+        sim.toast('🔎 ' + TRAPS[id].cause + ' もう一度押すと先へ進めます', 3200);
+        return;
+      }
       tracker.traps.push(id);
       tracker.pause();
       sim.setEnabled(false);
@@ -626,8 +699,10 @@
       sim.setEnabled(false);
       const r = tracker.result({ id: step.id, variant, done });
       const fast = r.usedTarget || r.usedAlt;
-      const mastery = S.recordAttempt({ id: step.id, skill, variant, ms: r.ms, done, usedTarget: r.usedTarget, discovered: done && !fast, hint: r.hint, mouse: r.mouse, kb: r.kb, scCount: r.scCount, traps: r.traps, mobile: IS_MOBILE });
+      const mastery = S.recordAttempt({ id: step.id, skill, variant, ms: r.ms, done, usedTarget: r.usedTarget, discovered: !fast, hint: r.hint, mouse: r.mouse, kb: r.kb, scCount: r.scCount, traps: r.traps, mobile: IS_MOBILE });
       if (done) Sound.play(fast ? 'speed-up' : 'correct');
+      // 1技能でも持ち帰れたら、SPEED CARD を自動で用意（途中離脱でも翌日チェックが届く）
+      if (!IS_MOBILE && ['PRACTICED', 'INDEPENDENT'].indexOf(S.skill(skill).state) >= 0) buildCard();
       feedback(r, mastery);
       prevResult = r;
     }
@@ -661,18 +736,27 @@
         : `<div class="mastery st-${st}"><span class="m-i">${S.STATE_MARK[st]}</span><b>${esc(sk.name)}</b>：${S.STATE_JA[st]}${
             st === 'INDEPENDENT' ? '（ヒントなし・別データで再現できました）' : st === 'PRACTICED' ? (r.hint ? '（ヒントを見たので、次はヒントなしで → ○）' : '（別のデータでも再現できたら → ○）') : st === 'DISCOVERED' ? '（次は自分の手で試そう）' : ''
           }</div>`;
+      // FAST は時間を守る：「次の技へ」「SPEED CARD」を主ボタンに。PRACTICE は「もう一度」を主に
       const btns = [];
+      const hasNext = p.queue && p.queue.length;
+      const fastEnd = p.fast && variant !== 'A' && !hasNext;
+      const againPrimary = !p.fast && st !== 'INDEPENDENT' && !IS_MOBILE;
       if (variant === 'A') btns.push(`<button class="btn primary" data-ov="retry">${fast ? '別データで再現 ▶' : 'TRY FASTER：別データでもう一度 ▶'}</button>`);
-      else if (st !== 'INDEPENDENT' && !IS_MOBILE) btns.push(`<button class="btn primary" data-ov="again">もう一度（別データ）▶</button>`);
-      if (variant !== 'A' && p.queue && p.queue.length) btns.push(`<button class="btn ${st === 'INDEPENDENT' || IS_MOBILE ? 'primary' : ''}" data-ov="nextq">次の技へ ▶</button>`);
-      if (variant !== 'A' && (!p.queue || !p.queue.length)) btns.push(`<button class="btn ${st === 'INDEPENDENT' || IS_MOBILE ? 'primary' : ''}" data-ov="hub">ミッション一覧へ</button>`);
+      if (variant !== 'A' && hasNext) btns.push(`<button class="btn ${againPrimary ? '' : 'primary'}" data-ov="nextq">次の技へ ▶ <small>（あと${p.queue.length}つ）</small></button>`);
+      if (fastEnd) btns.push('<button class="btn primary" data-ov="card">⚡ FAST 完了 → SPEED CARD ▶</button>');
+      if (variant !== 'A' && st !== 'INDEPENDENT' && !IS_MOBILE) btns.push(`<button class="btn ${againPrimary && !hasNext ? 'primary' : ''}" data-ov="again">もう一度（別データ）</button>`);
+      if (variant !== 'A' && !hasNext) btns.push(`<button class="btn ${!fastEnd && !againPrimary ? 'primary' : 'btn-ghost'}" data-ov="hub">${fastEnd ? '続けて練習する' : 'ミッション一覧へ'}</button>`);
       if (variant === 'A') btns.push('<button class="btn btn-ghost" data-ov="hub">一覧へ戻る</button>');
+      // primary は1つだけ（Enter で進む先を明確に）
+      const firstPrimary = btns.findIndex((b) => b.includes('btn primary'));
+      for (let i = firstPrimary + 1; i < btns.length; i++) btns[i] = btns[i].replace('btn primary', 'btn');
       const o = overlay(
         `<div class="fb">${head}${times}${compare}${discovery}${mText}<div class="ov-btns">${btns.join('')}</div></div>`,
         {
-          retry: () => go('mission', { skill, variant: 'B', queue: p.queue, prevForCompare: r }),
-          again: () => go('mission', { skill, variant: 'C', queue: p.queue, prevForCompare: r }),
-          nextq: () => go('mission', { skill: p.queue[0], variant: 'A', queue: p.queue.slice(1) }),
+          retry: () => go('mission', { skill, variant: 'B', queue: p.queue, prevForCompare: r, fast: p.fast }),
+          again: () => go('mission', { skill, variant: 'C', queue: p.queue, prevForCompare: r, fast: p.fast }),
+          nextq: () => go('mission', { skill: p.queue[0], variant: 'A', queue: p.queue.slice(1), fast: p.fast }),
+          card: () => go('card'),
           hub: () => go('hub'),
         },
         'ov-fb'
@@ -832,11 +916,14 @@
     const chk = S.state.check, fin = S.state.final;
     if (!fin) return go('hub');
     const name = { move: '最終行へ移動', select: '範囲選択', find: '検索', replace: '一括修正', sum: '合計', filter: '絞り込み' };
-    let rowsHtml = '', bMs = 0, aMs = 0, bMouse = 0, aMouse = 0, bSc = 0, aSc = 0, n = 0;
+    let rowsHtml = '', bMs = 0, aMs = 0, bMouse = 0, aMouse = 0, bSc = 0, aSc = 0, n = 0, lower = false;
     const sameRows = chk && chk.rows === fin.rows;
     fin.steps.forEach((a) => {
       const b = chk && chk.steps.find((x) => x.key === a.key);
-      const ok = sameRows && b && b.done && a.done;
+      // BEFORE が時間切れ（実測で「上限秒以上」）でも、AFTER がそれより速ければ「少なくとも○秒短縮」は言える
+      const lb = !!(b && !b.done && b.timedOut && a.done && a.ms < b.ms);
+      const ok = sameRows && b && a.done && (b.done || lb);
+      if (lb && ok) lower = true;
       if (ok) {
         n++;
         bMs += b.ms;
@@ -846,31 +933,36 @@
         bSc += b.scCount;
         aSc += a.scCount;
       }
-      rowsHtml += `<tr class="${ok ? '' : 'na'}"><td>${name[a.key]}</td><td>${b ? (b.done ? sec(b.ms) : '未完了') : '—'}</td><td>${a.done ? sec(a.ms) : '未完了'}</td><td>${ok ? (a.ms < b.ms - 50 ? '<b class="dn">' + diff(b.ms, a.ms) + '</b>' : diff(b.ms, a.ms)) : '比較対象外'}</td></tr>`;
+      const bTxt = b ? (b.done ? sec(b.ms) : b.timedOut ? sec(b.ms) + '以上' : 'スキップ') : '—';
+      const dTxt = ok ? (a.ms < b.ms - 50 ? '<b class="dn">' + diff(b.ms, a.ms) + (lb ? '以上' : '') + '</b>' : diff(b.ms, a.ms)) : '比較対象外';
+      rowsHtml += `<tr class="${ok ? '' : 'na'}"><td>${name[a.key]}</td><td>${bTxt}</td><td>${a.done ? sec(a.ms) : '未完了'}</td><td>${dTxt}</td></tr>`;
     });
     const can = n > 0;
+    const finDone = fin.steps.filter((x) => x.done).length;
+    // 「速くなった」と言い切るのは、半分以上の工程を同等条件で比較でき、合計で速くなった時だけ
+    const claim = can && n >= 3 && aMs < bMs - 50;
     app.innerHTML = `
       <div class="page ba">
         <div class="ba-bg">${img('bg-ending.jpg', '')}</div>
         <h1 class="ttl">🏁 MISSION COMPLETE</h1>
-        <p class="sub">${fin.overtime ? '16:00 は過ぎたけど、最後までやり切りました。' : '16:00 の会議に間に合いました！'} FINAL 合計 ${clock(fin.totalMs)}（実測）</p>
+        <p class="sub">${finDone < fin.steps.length ? `${finDone}/${fin.steps.length} 工程を完了。残りは練習で伸ばせます。` : fin.overtime ? '16:00 は過ぎたけど、最後までやり切りました。' : '16:00 の会議に間に合いました！'} FINAL 合計 ${clock(fin.totalMs)}（実測）</p>
         ${
           can
             ? `<div class="ba-main">
-                <div class="ba-col before"><span>BEFORE</span><b>${dur(bMs)}</b><small>SPEED CHECK</small></div>
+                <div class="ba-col before"><span>BEFORE</span><b>${dur(bMs)}${lower ? '<i>以上</i>' : ''}</b><small>SPEED CHECK</small></div>
                 <div class="ba-arr">→</div>
                 <div class="ba-col after"><span>AFTER</span><b>${dur(aMs)}</b><small>FINAL</small></div>
               </div>
-              <div class="ba-diff ${aMs < bMs - 50 ? 'good' : ''}">${diff(bMs, aMs)}</div>
+              <div class="ba-diff ${aMs < bMs - 50 ? 'good' : ''}">${diff(bMs, aMs)}${lower && aMs < bMs ? '<i>以上</i>' : ''}</div>
               <div class="ba-stats">
                 <div><span>Mouse Actions</span><b>${bMouse} → ${aMouse}</b></div>
                 <div><span>Shortcut Usage</span><b>${bSc} → ${aSc}</b></div>
               </div>
-              <p class="note">同等条件：同じ6工程・同じ ${fin.rows.toLocaleString('ja-JP')} 行・値だけ違う別データ。比較は両方完了した <b>${n}/6 工程</b>のみ。すべて実測値です。${n < 6 ? '未完了の工程は比較から除外しています。' : ''}</p>`
+              <p class="note">同等条件：同じ6工程・同じ ${fin.rows.toLocaleString('ja-JP')} 行・値だけ違う別データ。比較できたのは <b>${n}/6 工程</b>。すべて実測値です。${lower ? 'BEFORE が時間切れだった工程は「上限秒以上」として扱い、短縮は「以上」で表示しています。' : ''}${n < 6 ? '比較できない工程（スキップ・未完了）は除外しています。' : ''}</p>`
             : `<p class="note warn">${chk ? 'BEFORE と AFTER で両方完了した工程がないため、' : 'SPEED CHECK（BEFORE）が未実施のため、'}比較しません（条件が異なる結果で「速くなった」とは言えないため）。</p>`
         }
         <table class="ba-table"><thead><tr><th>工程</th><th>BEFORE</th><th>AFTER</th><th>差</th></tr></thead><tbody>${rowsHtml}</tbody></table>
-        <figure class="ending">${img('ending.jpg', '夕日の工場を見つめる3人')}<figcaption>${can && aMs < bMs - 50 ? '昨日より、Excel仕事が速くなった。<br><span>そして、困ったらまたここを使いたい。</span>' : '明日、今日の3技を1つ使ってみよう。<br><span>困ったら、またここへ。</span>'}</figcaption></figure>
+        <figure class="ending">${img('ending.jpg', '夕日の工場を見つめる3人')}<figcaption>${claim ? (chk.date === fin.date ? 'さっき' : '昨日') + 'より、Excel仕事が速くなった。<br><span>そして、困ったらまたここを使いたい。</span>' : '明日、今日の3技を1つ使ってみよう。<br><span>困ったら、またここへ。</span>'}</figcaption></figure>
         <div class="ov-btns"><button type="button" class="btn primary" data-go="card">📌 SPEED CARD を作る ▶</button></div>
       </div>`;
     const b = app.querySelector('[data-go]');
@@ -907,6 +999,59 @@
     S.save();
     return card;
   }
+  function copyText(text, btn) {
+    const done = () => (btn.textContent = '✓ コピーしました');
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => prompt('コピーしてください', text));
+    else prompt('コピーしてください', text);
+  }
+  // SPEED CARD を URL に載せて別端末（スマホ）へ渡す。個人情報は含まない（技能IDと日付のみ）
+  function cardUrl(card) {
+    const payload = { d: card.date, s: card.strengths, n: card.next, t: card.three, m: S.state.mySkills };
+    const b64 = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return location.href.split('#')[0] + '#card=' + b64;
+  }
+  EQ._cardUrl = (c) => cardUrl(c);
+  function importCardFromHash() {
+    const m = /^#card=([A-Za-z0-9_-]+)/.exec(location.hash);
+    if (!m) return false;
+    try {
+      const p = JSON.parse(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')));
+      const ok = (a) => Array.isArray(a) && a.every((x) => typeof x === 'string' && x.length < 20);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(p.d) || !ok(p.t) || !p.t.every((k) => SKILLS[k])) return false;
+      const st = S.state;
+      st.cards = st.cards.filter((c) => c.date !== p.d);
+      st.cards.push({ date: p.d, strengths: ok(p.s) ? p.s.filter((c) => CATS.indexOf(c) >= 0) : [], next: ok(p.n) ? p.n.filter((c) => CATS.indexOf(c) >= 0) : [], three: p.t.slice(0, 3) });
+      st.cards.sort((a, b) => (a.date < b.date ? -1 : 1));
+      if (ok(p.m) && p.m.every((k) => SKILLS[k]) && !st.mySkills.length) st.mySkills = p.m;
+      S.save();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function downloadIcs(card) {
+    const d = new Date(S.now().getTime() + 86400000);
+    const ymd = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+    const url = location.href.split('#')[0] + '#home';
+    const keysTxt = card.three.map((k) => SKILLS[k].keys.join('+') + ' ' + SKILLS[k].name).join(' / ');
+    const icsEsc = (t) => t.replace(/[\\;,]/g, (c) => '\\' + c);
+    const ics = [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//EXCEL QUEST OS//JA', 'BEGIN:VEVENT',
+      'UID:eqos-' + ymd + '-' + Math.random().toString(36).slice(2) + '@excel-quest-os',
+      'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''),
+      'DTSTART:' + ymd + 'T090000', 'DTEND:' + ymd + 'T090500',
+      'SUMMARY:' + icsEsc('昨日の3技、1つ使えた？（EXCEL QUEST OS・10秒）'),
+      'DESCRIPTION:' + icsEsc('今日使う3技：' + keysTxt + ' ／ ふり返り：' + url),
+      'BEGIN:VALARM', 'TRIGGER:PT0M', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEsc('昨日の3技、1つ使えた？'), 'END:VALARM',
+      'END:VEVENT', 'END:VCALENDAR',
+    ].join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+    a.download = 'excel-quest-os-nextday.ics';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
   SCREENS.card = function () {
     const st = S.state;
     let card;
@@ -933,19 +1078,45 @@
           ${img('navi.png', '', 'sc-navi')}
         </article>
         <div class="ov-btns noprint">
-          <button type="button" class="btn" data-act="print">🖨 印刷 / PDF保存</button>
-          <button type="button" class="btn" data-act="copy">📋 テキストをコピー</button>
-          <button type="button" class="btn primary" data-act="rescue">困ったら 30秒RESCUE ▶</button>
+          <button type="button" class="btn primary" data-act="phone">📱 スマホで持ち歩く</button>
+          <button type="button" class="btn" data-act="ics">📅 明日の振り返りを予定に追加</button>
+          <button type="button" class="btn" data-act="rescue">困ったら 30秒RESCUE</button>
         </div>
-        <p class="note noprint">明日またここを開くと「昨日の3技、1つ使えた？」が出ます。スマホでも見られます（このページをブックマーク）。</p>
+        <div class="ov-btns noprint sc-sub">
+          <button type="button" class="btn btn-ghost" data-act="print">🖨 印刷 / PDF</button>
+          <button type="button" class="btn btn-ghost" data-act="copy">📋 テキストをコピー</button>
+        </div>
+        <div class="sc-phone noprint" hidden></div>
+        <p class="note noprint">明日またここを開くと「昨日の3技、1つ使えた？」が出ます（スマホに保存した場合はスマホで）。</p>
       </div>`;
-    app.querySelector('[data-act="print"]').addEventListener('click', () => window.print());
-    app.querySelector('[data-act="copy"]').addEventListener('click', (e) => {
-      const b = e.currentTarget;
-      const done = () => (b.textContent = '✓ コピーしました');
-      if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, () => prompt('コピーしてください', txt));
-      else prompt('コピーしてください', txt);
+    app.querySelector('[data-act="phone"]').addEventListener('click', () => {
+      const box = app.querySelector('.sc-phone');
+      box.hidden = !box.hidden;
+      if (box.hidden) return;
+      const url = cardUrl(card);
+      const web = /^https?:$/.test(location.protocol) && !/^(localhost|127\.)/.test(location.hostname);
+      let qr = '';
+      try {
+        const q = window.qrcode(0, 'M');
+        q.addData(url);
+        q.make();
+        qr = q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+      } catch (e) {
+        qr = '';
+      }
+      box.innerHTML = `
+        <div class="qr">${qr}</div>
+        <div class="qr-txt">
+          <b>スマホのカメラで読み取る</b>
+          <p>このカードがスマホに保存され、翌日チェックと 30秒RESCUE をスマホで使えます。</p>
+          ${web ? '' : '<p class="note warn">※ このページは社内サーバー等で公開すると、スマホから開けます（今は ' + esc(location.host || 'ファイル') + ' で表示中）。</p>'}
+          <button type="button" class="btn btn-ghost" data-act="link">🔗 リンクをコピー</button>
+        </div>`;
+      box.querySelector('[data-act="link"]').addEventListener('click', (e) => copyText(url, e.currentTarget));
     });
+    app.querySelector('[data-act="ics"]').addEventListener('click', () => downloadIcs(card));
+    app.querySelector('[data-act="print"]').addEventListener('click', () => window.print());
+    app.querySelector('[data-act="copy"]').addEventListener('click', (e) => copyText(txt, e.currentTarget));
     app.querySelector('[data-act="rescue"]').addEventListener('click', () => go('rescue'));
   };
 
@@ -1207,6 +1378,18 @@
     const h = location.hash.slice(1);
     if (SCREENS[h] && h !== current) go(h);
   });
+  if (importCardFromHash()) {
+    history.replaceState(null, '', '#card');
+    go('card');
+    setTimeout(() => {
+      const t = document.createElement('div');
+      t.className = 'app-toast';
+      t.textContent = '📱 SPEED CARD をこの端末に保存しました';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3500);
+    }, 50);
+    return;
+  }
   const h0 = location.hash.slice(1);
   go(['home', 'rescue', 'card', 'records', 'hub'].indexOf(h0) >= 0 ? h0 : 'home');
 })(window.EQ);

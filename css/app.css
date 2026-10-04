@@ -507,3 +507,23 @@ img { max-width: 100%; }
   .topbar, .noprint, .skip-link { display: none !important; }
   .scard { box-shadow: none; border: 1px solid #ccc; }
 }
+
+/* ---------------------------------------------------------------- journey optimizations */
+.ba-col b i, .ba-diff i { font-size: .4em; font-style: normal; margin-left: 4px; }
+.aha-tag .ratio { display: inline-block; margin-left: 6px; background: var(--yellow); color: #1a1300; border-radius: 999px; padding: 0 10px; font-size: 16px; }
+.btn-hint.pulse { animation: pulse 1.2s ease-in-out 4; box-shadow: 0 0 0 0 rgba(242,183,5,.7); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(242,183,5,0); background: rgba(242,183,5,.3); } }
+.picks-1 { grid-template-columns: 1fr; max-width: 360px; }
+.picks-2 { grid-template-columns: repeat(2, 1fr); }
+.btn small { font-weight: 500; opacity: .75; }
+.sc-sub { margin-top: 6px; }
+.sc-sub .btn { min-height: 34px; font-size: 13px; }
+.sc-phone { display: flex; gap: 16px; align-items: center; background: #fff; color: var(--paper-ink); border-radius: var(--radius); padding: 14px; margin-top: 12px; flex-wrap: wrap; }
+.sc-phone[hidden] { display: none; }
+.qr { width: 168px; height: 168px; flex: none; }
+.qr svg { width: 100%; height: 100%; }
+.qr-txt { flex: 1; min-width: 200px; }
+.qr-txt p { margin: 4px 0; font-size: 13px; }
+.qr-txt .btn { color: var(--paper-ink); border-color: #b8c3cf; }
+.app-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--yellow); color: #1a1300; font-weight: 800; padding: 10px 18px; border-radius: 999px; z-index: 60; box-shadow: var(--shadow); }
+.sc-phone .note.warn { color: #6b4b00; background: #fff4c8; border-color: #e7c766; }

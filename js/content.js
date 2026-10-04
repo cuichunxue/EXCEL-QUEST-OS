@@ -28,7 +28,7 @@
     ctrlF: ['目で探さなくても、Excel に探させることができます。', 'Ctrl ＋「Find」の頭文字。', 'Ctrl + F → 文字を入力 → Enter'],
     ctrlH: ['1つずつ直さなくても、まとめて書き換えられます。', '「検索と置換」の置換タブ。Ctrl ＋アルファベット1文字で開けます。', 'Ctrl + H → 検索/置換後を入力 → すべて置換（Alt + A）'],
     ctrlShiftL: ['行を探すより、条件に合う行だけ残すほうが速い。', 'Ctrl + Shift ＋アルファベット1文字で、見出しに ▾ が付きます。', 'Ctrl + Shift + L → 見出しの ▾ → 値を1つだけチェック → OK'],
-    altEq: ['SUM を手で書かなくても、Excel が範囲を提案してくれます。', '合計を入れたいセルで、Alt と記号キーを組み合わせます。', '合計セルを選んで Alt + = → Enter'],
+    altEq: ['SUM を手で書かなくても、Excel が範囲を提案してくれます。', '合計を入れたいセルで、Alt と記号キーを組み合わせます。', '合計セルを選んで Alt + = → Enter（日本語キーボードは Alt + Shift + ほ）'],
     ctrlD: ['同じ値を何度も打たなくても、上のセルを写せます。', 'Ctrl ＋「Down」の頭文字。', 'Ctrl + D'],
   };
 
@@ -300,7 +300,7 @@
     { id: 'replace', skill: 'ctrlH', need: '文字をまとめて直したい', job: '品番・名称などを一括で書き換える', caution: '部分一致に注意。「完全に同一」を ON にすると安全です。', practice: () => BUILD.replace(Date.now() % 9973, { rows: 200, trap: true }) },
     { id: 'find', skill: 'ctrlF', need: '探したい', job: '大量データの中から1件を探す', caution: '範囲を選択したままだと、その中しか探しません。', practice: () => BUILD.find(Date.now() % 9973, { rows: 1500 }) },
     { id: 'filter', skill: 'ctrlShiftL', need: '絞りたい', job: '条件に合う行だけを表示する', caution: '終わったらもう一度 Ctrl + Shift + L で解除。空行があると表が途切れます。', practice: () => BUILD.filter(Date.now() % 9973, { rows: 800 }) },
-    { id: 'sum', skill: 'altEq', need: '合計したい', job: '列の合計をワンタッチで入れる', caution: '空白セルの手前で範囲が止まります。Enter の前に点線の範囲を確認。', practice: () => BUILD.sum(Date.now() % 9973, { rows: 25 }) },
+    { id: 'sum', skill: 'altEq', need: '合計したい', job: '列の合計をワンタッチで入れる', caution: '空白セルの手前で範囲が止まります。Enter の前に点線の範囲を確認。日本語キーボードでは「=」が Shift + ほ なので Alt + Shift + ほ。', practice: () => BUILD.sum(Date.now() % 9973, { rows: 25 }) },
   ];
 
   // ------------------------------------------------------------------ 10秒デモ（ミニグリッドのアニメーション）

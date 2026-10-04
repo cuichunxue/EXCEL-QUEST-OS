@@ -178,6 +178,21 @@ await page.click('[data-go="card"]');
 await page.waitForSelector('.scard');
 await shot('speed-card');
 ok((await page.$$('.sc-list li')).length === 3, '明日使う3技を生成');
+await page.click('[data-act="phone"]');
+ok(!!(await page.$('.sc-phone .qr svg')), 'SPEED CARD をスマホへ渡す QR を表示');
+const cardUrl = await page.evaluate(() => EQ._cardUrl(EQ.Store.state.cards.slice(-1)[0]));
+const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-act="ics"]')]);
+const ics = require('fs').readFileSync(await dl.path(), 'utf8');
+ok(/BEGIN:VEVENT[\s\S]*DTSTART:\d{8}T090000[\s\S]*SUMMARY:昨日の3技/.test(ics), '翌日 9:00 の振り返り予定（.ics）');
+const phone = await browser.newPage({ ...pw.devices['iPhone 13'] });
+await phone.goto(cardUrl);
+await phone.waitForSelector('.scard');
+ok((await phone.$$('.sc-list li')).length === 3 && (await phone.textContent('.app-toast')).includes('保存'), 'スマホで QR の URL を開くと SPEED CARD を取り込み');
+await phone.evaluate(() => { EQ.Store.state.dayOffset = 1; EQ.Store.save(); });
+await phone.goto(BASE + '#home');
+await phone.reload();
+ok(!!(await phone.$('.prompt-day')), 'スマホで翌日チェックが出る');
+await phone.close();
 
 // ---------------------------------------------------------------- NEXT DAY / WEEK
 await page.evaluate(() => {
